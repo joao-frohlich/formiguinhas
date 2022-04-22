@@ -6,10 +6,10 @@ fn main() {
     let width = 50;
     let height = 50;
     let dead_ants = 1000;
-    let agents = 20;
-    let radius = 4;
+    let agents = 50;
+    let radius = 2;
     let threshold = 0.45;
-    let min_prob = 0.0005;
+    let min_prob = 0.00005;
     App::new()
         .insert_resource(WindowDescriptor {
             title: "Formiguinhas".to_string(),

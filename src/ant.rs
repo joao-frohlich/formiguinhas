@@ -140,21 +140,37 @@ pub fn move_agent(
             agent.y as i32,
             agent.radius as i32,
             &query_cell,
-        )*(1.-board.min_prob*2.)+board.min_prob;
+        );
+        let mut cell = query_cell.get_mut(board.cells[agent.x][agent.y]).unwrap();
+        /*
+        */
+        let threshold = score*(1.-board.min_prob*2.)+board.min_prob;
         let dist = Uniform::<f32>::new_inclusive(0., 1.);
         let choice:f32 = rand::thread_rng().sample(dist);
-        let mut cell = query_cell.get_mut(board.cells[agent.x][agent.y]).unwrap();
         if agent.state && !cell.has_dead {
-            if choice <= score {
+            if choice <= threshold {
                 agent.state = false;
                 cell.has_dead = true;
             }
         } else if !agent.state && cell.has_dead {
-            if choice <= 1.-score {
+            if choice <= 1.-threshold {
                 agent.state = true;
                 cell.has_dead = false;
             }
         }
+        /*
+        if agent.state && !cell.has_dead {
+            if score >= board.threshold {
+                agent.state = false;
+                cell.has_dead = true;
+            }
+        } else if !agent.state && cell.has_dead {
+            if score < board.threshold {
+                agent.state = true;
+                cell.has_dead = false;
+            }
+        }
+        */
         if agent.x < board.height - 1 {
             let x = agent.x + 1;
             let y = agent.y;
