@@ -1,4 +1,6 @@
+// use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
+use bevy::window::PresentMode;
 use formiguinhas::ant::*;
 use formiguinhas::board::*;
 
@@ -6,21 +8,27 @@ fn main() {
     let width = 50;
     let height = 50;
     let dead_ants = 1000;
-    let agents = 50;
-    let radius = 2;
+    let agents = 10;
+    let max_iter = 100000;
+    let radius = 1;
     let threshold = 0.45;
-    let min_prob = 0.00005;
+    let min_prob = 0.00000;
     App::new()
         .insert_resource(WindowDescriptor {
             title: "Formiguinhas".to_string(),
             width: 600.,
             height: 600.,
             resizable: false,
+            present_mode: PresentMode::Immediate,
             ..default()
         })
         .add_plugins(DefaultPlugins)
+        // .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .init_resource::<Board>()
-        .insert_resource(Board::new(width, height, dead_ants, agents, radius, threshold, min_prob))
+        .insert_resource(Board::new(
+            width, height, dead_ants, agents, max_iter, radius, threshold, min_prob,
+        ))
         .add_startup_system_to_stage(StartupStage::PreStartup, setup_board)
         .add_startup_system(setup_camera)
         .add_startup_system(setup_dead_ants)
@@ -28,6 +36,7 @@ fn main() {
         .add_system(color_cells)
         .add_system(draw_agents)
         .add_system(move_agent)
+        .add_system(set_visibility)
         .run();
 }
 
@@ -105,6 +114,15 @@ pegar(S,T) = 0.005+(S/T-0.01)
 No mínimo 0,5% e no máximo 99,5% de probabilidade
 S == T -> 99,5%
 S == 0 -> 00,5%
+
+O que eu quero favorecer?
+Se tiver uma quantidade pequena de itens, quero uma chance menor
+Se tiver uma quantidade grande de itens, quero uma chance maior
+
+Quando parar a iteração, sumir com as formigas livres e deixar as formigas restantes
+iterarem até largarem os itens
+
+
 */
 
 /*

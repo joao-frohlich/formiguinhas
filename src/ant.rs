@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use rand::distributions::WeightedIndex;
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
-//use std::{thread, time};
+// use std::{thread, time};
 
 #[derive(Default, Component)]
 pub struct Agent {
@@ -12,6 +12,8 @@ pub struct Agent {
     y: usize,
     radius: usize,
     state: bool,
+    iter: usize,
+    active: bool,
 }
 
 pub fn setup_agents(
@@ -60,6 +62,7 @@ pub fn setup_agents(
                     x: x,
                     y: y,
                     radius: board.radius,
+                    active: true,
                     ..default()
                 });
             cont += 1;
@@ -77,12 +80,12 @@ pub fn draw_agents(asset_server: Res<AssetServer>, mut query: Query<(&Agent, &mu
     }
 }
 
-fn manhattan(p1: (i32, i32), p2: (i32, i32)) -> i32 {
-    (p1.0 - p2.0 + p1.1 - p2.1).abs()
-}
+// fn manhattan(p1: (i32, i32), p2: (i32, i32)) -> i32 {
+//     (p1.0 - p2.0 + p1.1 - p2.1).abs()
+// }
 
 fn check_radius(
-    board: &Res<Board>,
+    board: &ResMut<Board>,
     ax: i32,
     ay: i32,
     r: i32,
@@ -94,13 +97,8 @@ fn check_radius(
     let mut occ = 0;
     for x in ax - r..=ax + r {
         for y in ay - r..=ay + r {
-            if x != ax
-                && y != ay
-                && x >= 0
-                && x < width
-                && y >= 0
-                && y < height
-                && manhattan((ax, ay), (x, y)) <= r
+            if x >= 0 && x < width && (x != ax || y != ay) && y >= 0 && y < height
+            // && manhattan((ax, ay), (x, y)) <= r
             {
                 tot += 1;
                 let cell = query_cell.get(board.cells[x as usize][y as usize]).unwrap();
@@ -110,28 +108,39 @@ fn check_radius(
             }
         }
     }
+    // println!("{} {}", occ, tot);
     occ as f32 / tot as f32
 }
 
 pub fn move_agent(
     windows: Res<Windows>,
-    board: Res<Board>,
+    mut board: ResMut<Board>,
     mut query: Query<(&mut Agent, &mut Transform)>,
     mut query_cell: Query<&mut Cell>,
 ) {
-    //let time = time::Duration::from_secs_f32(10.);
-    //thread::sleep(time);
+    // let time = time::Duration::from_secs_f32(0.1);
+    // thread::sleep(time);
 
     let moves: [(i32, i32); 4] = [(1, 0), (0, 1), (-1, 0), (0, -1)];
 
+    let mut cur_iter = 0;
     let window = windows.primary();
     let border_width = 2.0;
     let cell_width =
         (window.width() - border_width * (board.width - 1) as f32) / (board.width as f32);
     let cell_height =
         (window.height() - border_width * (board.height - 1) as f32) / (board.height as f32);
+    let max_iter = board.max_iter;
 
     for (mut agent, mut transform) in query.iter_mut() {
+        if !agent.active {
+            continue;
+        }
+        agent.iter += 1;
+        cur_iter = agent.iter;
+        // if agent.iter % 1000 == 0 && agent.iter <= 4000 {
+        //     agent.radius = agent.iter/1000;
+        // }
         let mut weights: [i32; 4] = [0, 0, 0, 0];
         let mut has_option = false;
         let score = check_radius(
@@ -143,19 +152,26 @@ pub fn move_agent(
         );
         let mut cell = query_cell.get_mut(board.cells[agent.x][agent.y]).unwrap();
         /*
-        */
-        let threshold = score*(1.-board.min_prob*2.)+board.min_prob;
+         */
+        let exp = 3.;//std::f32::consts::E;
+        let score = score * (1. - board.min_prob * 2.) + board.min_prob;
+        let let_threshold = f32::powf(score, exp);
+        let get_threshold = 1. - (f32::powf(score, 1. / exp));
         let dist = Uniform::<f32>::new_inclusive(0., 1.);
-        let choice:f32 = rand::thread_rng().sample(dist);
+        let choice: f32 = rand::thread_rng().sample(dist);
         if agent.state && !cell.has_dead {
-            if choice <= threshold {
+            if choice <= let_threshold {
                 agent.state = false;
                 cell.has_dead = true;
             }
-        } else if !agent.state && cell.has_dead {
-            if choice <= 1.-threshold {
-                agent.state = true;
-                cell.has_dead = false;
+        } else if !agent.state {
+            if agent.iter > max_iter {
+                agent.active = false;
+            } else {
+                if cell.has_dead && choice <= get_threshold {
+                    agent.state = true;
+                    cell.has_dead = false;
+                }
             }
         }
         /*
@@ -227,5 +243,21 @@ pub fn move_agent(
             translation.x = cx;
             translation.y = cy;
         }
+    }
+    if cur_iter == 0 {
+        if !board.is_done {
+            println!("Cabou");
+            board.is_done = true;
+        }
+        return;
+    }
+    if cur_iter % 1000 == 0 {
+        println!("{}", cur_iter);
+    };
+}
+
+pub fn set_visibility(mut query: Query<(&mut Visibility, &Agent)>) {
+    for (mut visibility, ant) in query.iter_mut() {
+        visibility.is_visible = ant.active;
     }
 }
