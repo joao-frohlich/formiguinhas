@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy::window::PresentMode;
 use formiguinhas::ant::*;
 use formiguinhas::board::*;
+use formiguinhas::params::*;
 
 fn main() {
     let width = 50;
@@ -10,6 +11,7 @@ fn main() {
     let dead_ants = 1000;
     let agents = 10;
     let max_iter = 100000;
+    let iter_per_render = 10000;
     let radius = 1;
     let threshold = 0.45;
     let min_prob = 0.00000;
@@ -26,8 +28,15 @@ fn main() {
         // .add_plugin(LogDiagnosticsPlugin::default())
         // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .init_resource::<Board>()
-        .insert_resource(Board::new(
-            width, height, dead_ants, agents, max_iter, radius, threshold, min_prob,
+        .insert_resource(Board::new(width, height))
+        .insert_resource(Params::new(
+            dead_ants,
+            agents,
+            max_iter,
+            iter_per_render,
+            radius,
+            threshold,
+            min_prob,
         ))
         .add_startup_system_to_stage(StartupStage::PreStartup, setup_board)
         .add_startup_system(setup_camera)

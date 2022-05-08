@@ -1,6 +1,7 @@
 pub mod ant;
 pub mod board;
 pub mod cell;
+pub mod params;
 
 #[cfg(test)]
 mod tests {

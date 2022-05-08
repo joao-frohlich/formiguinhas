@@ -1,50 +1,28 @@
 use crate::cell::Cell;
+use crate::params::Params;
 use bevy::prelude::*;
 use rand::distributions::{Distribution, Uniform};
 
 pub struct Board {
     pub width: usize,
     pub height: usize,
-    pub dead_ants: usize,
-    pub max_iter: usize,
-    pub agents: usize,
-    pub radius: usize,
-    pub threshold: f32,
-    pub min_prob: f32,
     pub cells: Vec<Vec<Entity>>,
-    pub is_done: bool,
 }
 
 impl Board {
-    pub fn new(
-        width: usize,
-        height: usize,
-        dead_ants: usize,
-        agents: usize,
-        max_iter: usize,
-        radius: usize,
-        threshold: f32,
-        min_prob: f32,
-    ) -> Self {
+    pub fn new(width: usize, height: usize) -> Self {
         let cells = vec![vec![Entity::from_raw(0); width]; height];
         Self {
             width,
             height,
-            dead_ants,
-            agents,
-            max_iter,
-            radius,
-            threshold,
-            min_prob,
             cells,
-            is_done: false,
         }
     }
 }
 
 impl Default for Board {
     fn default() -> Self {
-        Self::new(50, 50, 1000, 10, 10000, 4, 0.45, 0.005)
+        Self::new(50, 50)
     }
 }
 
@@ -78,13 +56,13 @@ pub fn setup_board(mut commands: Commands, windows: Res<Windows>, mut board: Res
     }
 }
 
-pub fn setup_dead_ants(board: Res<Board>, mut query: Query<&mut Cell>) {
+pub fn setup_dead_ants(board: Res<Board>, mut query: Query<&mut Cell>, params: Res<Params>) {
     let mut cont = 0;
     let between_width = Uniform::from(0..board.width);
     let between_height = Uniform::from(0..board.height);
     let mut rng = rand::thread_rng();
     //println!("{}", query.iter().len());
-    while cont < board.dead_ants {
+    while cont < params.dead_ants {
         let x = between_width.sample(&mut rng);
         let y = between_height.sample(&mut rng);
         let mut cell = query.get_mut(board.cells[x][y]).unwrap();
