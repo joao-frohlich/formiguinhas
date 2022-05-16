@@ -1,8 +1,8 @@
-// use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy::window::PresentMode;
-use formiguinhas::ant::*;
-use formiguinhas::board::*;
+use formiguinhas::heterogeneous_ant::*;
+use formiguinhas::heterogeneous_board::*;
 use formiguinhas::params::*;
 
 fn main() {
@@ -11,15 +11,21 @@ fn main() {
     let dead_ants = 1000;
     let agents = 10;
     let max_iter = 10000000;
-    let iter_per_render = 1;
+    let iter_per_render = 1000;
     let radius = 1;
     let threshold = 0.45;
     let min_prob = 0.00000;
-    let base_path = "".to_string();
-    let colors = [].to_vec();
-    let k1 = 0.;
-    let k2 = 0.;
-    let alpha = 0.;
+    let base_path = "bases/base4.txt".to_string();
+    let colors = [(0.75, 0.25, 0.25),(0.25, 0.25, 0.75),(0.75, 0.25, 0.75),(0.75, 0.75, 0.25)].to_vec();
+    let k1 = 0.3;
+    let k2 = 0.45;
+    let alpha = 30.0;
+    // let base_path = "bases/base15.txt".to_string();
+    // let colors = [
+    //     (0.925, 0.486, 0.149),(0.243, 0.231, 0.196),(0.164, 0.392, 0.47),(0.56, 0.545, 0.4),
+    //     (0.258, 0.274, 0.196),(0.78, 0.705, 0.274),(0.917, 0.902, 0.792),(0.509, 0.509, 0.509),
+    //     (0.796, 0.157, 0.129),(0.631, 0.137, 0.07),(0.188, 0.517, 0.274),(0.117, 0.117, 0.117),
+    //     (0.956, 0.662, 0.),(0., 0.956, 0.662),(0.47, 0.121, 0.098)].to_vec();
 
     App::new()
         .insert_resource(WindowDescriptor {
@@ -31,10 +37,10 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins)
-        // .add_plugin(LogDiagnosticsPlugin::default())
-        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .init_resource::<Board>()
-        .insert_resource(Board::new(width, height))
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .init_resource::<HeterogeneousBoard>()
+        .insert_resource(HeterogeneousBoard::new(width, height))
         .insert_resource(Params::new(
             dead_ants,
             agents,
@@ -51,7 +57,7 @@ fn main() {
         ))
         .add_startup_system_to_stage(StartupStage::PreStartup, setup_board)
         .add_startup_system(setup_camera)
-        .add_startup_system(setup_dead_ants)
+        .add_startup_system(setup_items)
         .add_startup_system(setup_agents)
         .add_system(color_cells)
         .add_system(draw_agents)

@@ -1,18 +1,19 @@
-use crate::board::Board;
-use crate::cell::Cell;
+use crate::heterogeneous_board::HeterogeneousBoard;
+use crate::heterogeneous_cell::HeterogeneousCell;
+use crate::data_item::DataItem;
 use crate::params::Params;
 use bevy::prelude::*;
 use rand::distributions::WeightedIndex;
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
-use std::{thread, time};
+// use std::{thread, time};
 
 #[derive(Default, Component)]
 pub struct Agent {
     x: usize,
     y: usize,
     radius: usize,
-    state: bool,
+    item: Option<DataItem>,
     iter: usize,
     active: bool,
 }
@@ -20,9 +21,9 @@ pub struct Agent {
 pub fn setup_agents(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    board: Res<Board>,
+    board: Res<HeterogeneousBoard>,
     windows: Res<Windows>,
-    mut query: Query<&mut Cell>,
+    mut query: Query<&mut HeterogeneousCell>,
     params: Res<Params>,
 ) {
     asset_server.watch_for_changes().unwrap();
@@ -74,55 +75,62 @@ pub fn setup_agents(
 
 pub fn draw_agents(asset_server: Res<AssetServer>, mut query: Query<(&Agent, &mut Handle<Image>)>) {
     for (agent, mut image_handle) in query.iter_mut() {
-        if agent.state {
-            *image_handle = asset_server.load("carry_ant.png");
-        } else {
-            *image_handle = asset_server.load("empty_ant.png");
+        match agent.item {
+            Some(_) => {*image_handle = asset_server.load("carry_ant.png");},
+            None => { *image_handle = asset_server.load("empty_ant.png");}
         }
     }
 }
 
-// fn manhattan(p1: (i32, i32), p2: (i32, i32)) -> i32 {
-//     (p1.0 - p2.0 + p1.1 - p2.1).abs()
-// }
+fn euclidean_distance_2d(item1: DataItem, item2: DataItem) -> f32 {
+    f32::powf(f32::powf(item1.size - item2.size, 2.) + f32::powf(item1.weight - item2.weight,2.),1./2.)
+}
 
 fn check_radius(
-    board: &Res<Board>,
+    board: &Res<HeterogeneousBoard>,
     ax: i32,
     ay: i32,
     r: i32,
-    query_cell: &Query<&mut Cell>,
+    carried_item: DataItem,
+    query_cell: &Query<&mut HeterogeneousCell>,
 ) -> f32 {
     let width = board.width as i32;
     let height = board.height as i32;
     let mut tot = 0;
     let mut occ = 0;
+    let mut sum_d: f32 = 0.;
     for x in ax - r..=ax + r {
         for y in ay - r..=ay + r {
             if x >= 0 && x < width && (x != ax || y != ay) && y >= 0 && y < height
-            // && manhattan((ax, ay), (x, y)) <= r
             {
                 tot += 1;
                 let cell = query_cell.get(board.cells[x as usize][y as usize]).unwrap();
-                if cell.has_dead {
-                    occ += 1;
+                match cell.item {
+                    Some(looked_item) => {
+                        occ += 1;
+                        sum_d += euclidean_distance_2d(carried_item, looked_item);
+                    },
+                    None => {}
                 }
             }
         }
     }
-    // println!("{} {}", occ, tot);
-    occ as f32 / tot as f32
+    if occ == 0 { return 0.; }
+    else {
+        // println!("{} {}", tot, sum_d);
+        tot as f32/sum_d
+    }
 }
 
 pub fn move_agent(
     windows: Res<Windows>,
-    board: Res<Board>,
+    board: Res<HeterogeneousBoard>,
     mut query: Query<(&mut Agent, &mut Transform)>,
-    mut query_cell: Query<&mut Cell>,
+    mut query_cell: Query<&mut HeterogeneousCell>,
     mut params: ResMut<Params>,
 ) {
-    let time = time::Duration::from_secs_f32(0.01);
-    thread::sleep(time);
+    // let time = time::Duration::from_secs_f32(0.1);
+    // thread::sleep(time);
 
     let moves: [(i32, i32); 4] = [(1, 0), (0, 1), (-1, 0), (0, -1)];
 
@@ -142,56 +150,91 @@ pub fn move_agent(
             }
             agent.iter += 1;
             cur_iter = agent.iter;
-            // if agent.iter % 1000 == 0 && agent.iter <= 4000 {
-            //     agent.radius = agent.iter/1000;
-            // }
             let mut weights: [i32; 4] = [0, 0, 0, 0];
             let mut has_option = false;
-            let score = check_radius(
-                &board,
-                agent.x as i32,
-                agent.y as i32,
-                agent.radius as i32,
-                &query_cell,
-            );
-            let mut cell = query_cell.get_mut(board.cells[agent.x][agent.y]).unwrap();
-            /*
-             */
-            //let exp = 2.;
-            let exp = std::f32::consts::E;
-            let score = score * (1. - params.min_prob * 2.) + params.min_prob;
-            let let_threshold = f32::powf(score, exp);
-            let get_threshold = 1. - (f32::powf(score, 1. / exp));
-            let dist = Uniform::<f32>::new_inclusive(0., 1.);
-            let choice: f32 = rand::thread_rng().sample(dist);
-            if agent.state && !cell.has_dead {
-                if choice <= let_threshold {
-                    agent.state = false;
-                    cell.has_dead = true;
-                }
-            } else if !agent.state {
-                if agent.iter > max_iter {
-                    agent.active = false;
-                } else {
-                    if cell.has_dead && choice <= get_threshold {
-                        agent.state = true;
-                        cell.has_dead = false;
+            let cell = query_cell.get_mut(board.cells[agent.x][agent.y]).unwrap();
+            match agent.item {
+                //Largar
+                Some(item) => {
+                    match cell.item {
+                        Some(_) => {},
+                        None => {
+                            let score = check_radius(
+                                &board,
+                                agent.x as i32,
+                                agent.y as i32,
+                                agent.radius as i32,
+                                item,
+                                &query_cell,
+                            );
+                            let mut cell = query_cell.get_mut(board.cells[agent.x][agent.y]).unwrap();
+                            // let exp = 2.;
+                            let exp = std::f32::consts::E;
+                            let score = score * (1. - params.min_prob * 2.) + params.min_prob;
+                            let threshold = f32::powf(score, exp);
+                            // let threshold = f32::min(2.*score, 1.);
+                            // let let_threshold = f32::powf(score, exp);
+                            // let get_threshold = 1. - (f32::powf(score, 1. / exp));
+                            let dist = Uniform::<f32>::new_inclusive(0., 1.);
+                            let choice: f32 = rand::thread_rng().sample(dist);
+                            if choice <= threshold {
+                                cell.item = agent.item;
+                                agent.item = None;
+                            }
+                        }
+                    }
+                },
+                //Pegar
+                None => {
+                    if agent.iter > max_iter {
+                        agent.active = false;
+                    } else {
+                        match cell.item {
+                            Some(item) => {
+                                let score = check_radius(
+                                    &board,
+                                    agent.x as i32,
+                                    agent.y as i32,
+                                    agent.radius as i32,
+                                    item,
+                                    &query_cell,
+                                );
+                                let mut cell = query_cell.get_mut(board.cells[agent.x][agent.y]).unwrap();
+                                // let exp = 2.;
+                                let exp = std::f32::consts::E;
+                                let score = score * (1. - params.min_prob * 2.) + params.min_prob;
+                                // println!("{}", score);
+                                // let threshold = 1. - f32::powf(score, 1./ exp);
+                                let threshold = f32::powf(params.k1/(params.k1+score), exp);
+                                // let let_threshold = f32::powf(score, exp);
+                                // let get_threshold = 1. - (f32::powf(score, 1. / exp));
+                                let dist = Uniform::<f32>::new_inclusive(0., 1.);
+                                let choice: f32 = rand::thread_rng().sample(dist);
+                                if choice <= threshold {
+                                    agent.item = cell.item;
+                                    cell.item = None;
+                                }
+                            },
+                            None => {}
+                        }
                     }
                 }
             }
-            /*
-            if agent.state && !cell.has_dead {
-                if score >= board.threshold {
-                    agent.state = false;
-                    cell.has_dead = true;
-                }
-            } else if !agent.state && cell.has_dead {
-                if score < board.threshold {
-                    agent.state = true;
-                    cell.has_dead = false;
-                }
-            }
-            */
+            // if agent.state && !cell.has_dead {
+            //     if choice <= let_threshold {
+            //         agent.state = false;
+            //         cell.has_dead = true;
+            //     }
+            // } else if !agent.state {
+            //     if agent.iter > max_iter {
+            //         agent.active = false;
+            //     } else {
+            //         if cell.has_dead && choice <= get_threshold {
+            //             agent.state = true;
+            //             cell.has_dead = false;
+            //         }
+            //     }
+            // }
             if agent.x < board.height - 1 {
                 let x = agent.x + 1;
                 let y = agent.y;
@@ -259,9 +302,9 @@ pub fn move_agent(
         }
         return;
     }
-    if cur_iter % 1000 == 0 {
-        println!("{}", cur_iter);
-    };
+    // if cur_iter % 1000 == 0 {
+    //     println!("{}", cur_iter);
+    // };
 }
 
 pub fn set_visibility(mut query: Query<(&mut Visibility, &Agent)>) {
