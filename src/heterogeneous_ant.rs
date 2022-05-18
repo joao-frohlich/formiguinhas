@@ -108,7 +108,7 @@ fn check_radius(
                 match cell.item {
                     Some(looked_item) => {
                         occ += 1;
-                        sum_d += euclidean_distance_2d(carried_item, looked_item);
+                        sum_d += 1./euclidean_distance_2d(carried_item, looked_item);
                     },
                     None => {}
                 }
@@ -118,7 +118,7 @@ fn check_radius(
     if occ == 0 { return 0.; }
     else {
         // println!("{} {}", tot, sum_d);
-        tot as f32/sum_d
+        sum_d/tot as f32
     }
 }
 
@@ -171,8 +171,10 @@ pub fn move_agent(
                             // let exp = 2.;
                             let exp = std::f32::consts::E;
                             let score = score * (1. - params.min_prob * 2.) + params.min_prob;
-                            let threshold = f32::powf(score, exp);
-                            // let threshold = f32::min(2.*score, 1.);
+                            // let threshold = f32::powf(score, exp);
+
+                            let threshold = f32::powf(score/(params.k2+score), exp);
+
                             // let let_threshold = f32::powf(score, exp);
                             // let get_threshold = 1. - (f32::powf(score, 1. / exp));
                             let dist = Uniform::<f32>::new_inclusive(0., 1.);
@@ -220,21 +222,7 @@ pub fn move_agent(
                     }
                 }
             }
-            // if agent.state && !cell.has_dead {
-            //     if choice <= let_threshold {
-            //         agent.state = false;
-            //         cell.has_dead = true;
-            //     }
-            // } else if !agent.state {
-            //     if agent.iter > max_iter {
-            //         agent.active = false;
-            //     } else {
-            //         if cell.has_dead && choice <= get_threshold {
-            //             agent.state = true;
-            //             cell.has_dead = false;
-            //         }
-            //     }
-            // }
+
             if agent.x < board.height - 1 {
                 let x = agent.x + 1;
                 let y = agent.y;

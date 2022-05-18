@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use rand::distributions::WeightedIndex;
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
-use std::{thread, time};
+// use std::{thread, time};
 
 #[derive(Default, Component)]
 pub struct Agent {
@@ -121,8 +121,8 @@ pub fn move_agent(
     mut query_cell: Query<&mut Cell>,
     mut params: ResMut<Params>,
 ) {
-    let time = time::Duration::from_secs_f32(0.01);
-    thread::sleep(time);
+    // let time = time::Duration::from_secs_f32(0.01);
+    // thread::sleep(time);
 
     let moves: [(i32, i32); 4] = [(1, 0), (0, 1), (-1, 0), (0, -1)];
 
