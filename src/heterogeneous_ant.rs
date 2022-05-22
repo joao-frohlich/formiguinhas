@@ -285,7 +285,6 @@ pub fn move_agent(
     }
     if cur_iter == 0 {
         if !params.is_done {
-            println!("Cabou");
             params.is_done = true;
         }
         return;

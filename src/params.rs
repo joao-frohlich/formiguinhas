@@ -1,3 +1,6 @@
+use bevy::prelude::*;
+use bevy::app::AppExit;
+
 pub struct Params {
     pub dead_ants: usize,
     pub max_iter: usize,
@@ -50,5 +53,11 @@ impl Params {
 impl Default for Params {
     fn default() -> Self {
         Self::new(1000, 10, 10000, 500, 4, 0.45, 0.005, "".to_string(), [].to_vec(), 0.3, 0.9, 30.0)
+    }
+}
+
+pub fn exit_app(keys: Res<Input<KeyCode>>, params: Res<Params>, mut exit: EventWriter<AppExit>) {
+    if params.is_done && keys.just_pressed(KeyCode::Escape) {
+        exit.send(AppExit);
     }
 }

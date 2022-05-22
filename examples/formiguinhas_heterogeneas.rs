@@ -4,22 +4,30 @@ use bevy::window::PresentMode;
 use formiguinhas::heterogeneous_ant::*;
 use formiguinhas::heterogeneous_board::*;
 use formiguinhas::params::*;
+use std::env;
 
 fn main() {
-    let width = 50;
-    let height = 50;
-    let max_iter = 10000000;
-    let iter_per_render = 100000;
+    let args: Vec<String> = env::args().collect();
+    let mut k1: f32 = 0.3;
+    let mut k2: f32 = 0.4;
+    if args.len() == 3 {
+        let query = &args[1];
+        k1 = query.parse().expect("k1 should be float");
+        let query = &args[2];
+        k2 = query.parse().expect("k2 should be float");
+    }
+    // let width = 50;
+    // let height = 50;
+    // let max_iter = 1000000;
+    // let iter_per_render = 10000;
     let dead_ants = 1000;
-    let agents = 50;
+    let agents = 10;
     let radius = 1;
     let threshold = 0.45;
     let min_prob = 0.00000;
     let items = 400;
     let base_path = "bases/base4.txt".to_string();
     let colors = [(0.75, 0.25, 0.25),(0.25, 0.25, 0.75),(0.75, 0.25, 0.75),(0.75, 0.75, 0.25)].to_vec();
-    let k1 = 0.3;
-    let k2 = 0.4;
     let alpha = 30.0;
     // let items = 600;
     // let base_path = "bases/base15.txt".to_string();
@@ -29,16 +37,19 @@ fn main() {
     //     (0.796, 0.157, 0.129),(0.631, 0.137, 0.07),(0.188, 0.517, 0.274),(0.117, 0.117, 0.117),
     //     (0.956, 0.662, 0.),(0., 0.956, 0.662),(0.47, 0.121, 0.098)].to_vec();
 
-    // let width: usize = f32::powf(10.*items as f32, 1./2.) as usize;
-    // let height: usize = f32::powf(10.*items as f32, 1./2.) as usize;
-    // let max_iter = usize::max(1000000, 2000*items);
+    let width: usize = f32::powf(10.*items as f32, 1./2.) as usize;
+    let height: usize = f32::powf(10.*items as f32, 1./2.) as usize;
+    let max_iter = usize::max(1000000, 2000*items);
     // let iter_per_render: usize = f32::powf(20.*items as f32, 1./2.) as usize;
+    let iter_per_render = max_iter;
 
     // println!("{} {} {} {}", width, height, max_iter, iter_per_render);
 
+    let window_name = "Formiguinhas ".to_string() + k1.to_string().as_str() + " " + k2.to_string().as_str();
+
     App::new()
         .insert_resource(WindowDescriptor {
-            title: "Formiguinhas".to_string(),
+            title: window_name,
             width: 700.,
             height: 700.,
             resizable: false,
@@ -72,6 +83,7 @@ fn main() {
         .add_system(draw_agents)
         .add_system(move_agent)
         .add_system(set_visibility)
+        .add_system(exit_app)
         .run();
 }
 
