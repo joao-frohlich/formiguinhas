@@ -1,8 +1,8 @@
 #!/bin/bash
 
-for i in {01..99}
+for i in {1..9}
 do
-    for j in {01..99}
+    for j in {1..9}
     do
         echo 0.$i 0.$j
         cargo run --example formiguinhas_heterogeneas --release 0.$i 0.$j

@@ -16,9 +16,9 @@ fn main() {
         let query = &args[2];
         k2 = query.parse().expect("k2 should be float");
     }
-    // let width = 50;
-    // let height = 50;
-    // let max_iter = 1000000;
+    let width = 50;
+    let height = 50;
+    let max_iter = 1000000;
     // let iter_per_render = 10000;
     let dead_ants = 1000;
     let agents = 10;
@@ -37,10 +37,10 @@ fn main() {
     //     (0.796, 0.157, 0.129),(0.631, 0.137, 0.07),(0.188, 0.517, 0.274),(0.117, 0.117, 0.117),
     //     (0.956, 0.662, 0.),(0., 0.956, 0.662),(0.47, 0.121, 0.098)].to_vec();
 
-    let width: usize = f32::powf(10.*items as f32, 1./2.) as usize;
-    let height: usize = f32::powf(10.*items as f32, 1./2.) as usize;
-    let max_iter = usize::max(1000000, 2000*items);
-    // let iter_per_render: usize = f32::powf(20.*items as f32, 1./2.) as usize;
+    //let width: usize = f32::powf(10.*items as f32, 1./2.) as usize;
+    //let height: usize = f32::powf(10.*items as f32, 1./2.) as usize;
+    //let max_iter = usize::max(1000000, 2000*items);
+    //let iter_per_render: usize = f32::powf(20.*items as f32, 1./2.) as usize;
     let iter_per_render = max_iter;
 
     // println!("{} {} {} {}", width, height, max_iter, iter_per_render);

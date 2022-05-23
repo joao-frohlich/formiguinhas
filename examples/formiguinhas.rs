@@ -12,7 +12,7 @@ fn main() {
     let agents = 10;
     let max_iter = 1000000;
     let iter_per_render = 100000;
-    let radius = 5;
+    let radius = 1;
     let threshold = 0.45;
     let min_prob = 0.00000;
     let base_path = "".to_string();

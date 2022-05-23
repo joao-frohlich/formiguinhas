@@ -43,7 +43,7 @@ pub fn setup_board(mut commands: Commands, windows: Res<Windows>, mut board: Res
                 .spawn_bundle(SpriteBundle {
                     transform: Transform::from_xyz(cx, cy, 1.0),
                     sprite: Sprite {
-                        color: Color::rgb(0.25, 0.75, 0.25),
+                        color: Color::rgb(1., 1., 1.),
                         custom_size: Some(Vec2::new(cell_width, cell_height)),
                         ..default()
                     },
@@ -75,8 +75,8 @@ pub fn setup_dead_ants(board: Res<Board>, mut query: Query<&mut Cell>, params: R
 
 pub fn color_cells(mut query_cell: Query<(&Cell, &mut Sprite), Changed<Cell>>) {
     for (cell, mut sprite) in query_cell.iter_mut() {
-        let green = if cell.has_dead { 0.25 } else { 0.75 };
-        let red = if cell.has_dead { 0.75 } else { 0.25 };
-        sprite.color = Color::rgb(red, green, 0.25);
+        let green = if cell.has_dead { 0.25 } else { 1. };
+        let blue = if cell.has_dead { 0.25 } else { 1. };
+        sprite.color = Color::rgb(1., green, blue);
     }
 }
